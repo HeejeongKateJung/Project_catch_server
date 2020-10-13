@@ -23,6 +23,7 @@ public class RoomManager{
 
     public static int CODE_CHATMSG = 111;     //채팅 메시지
     public static int CODE_NOTICE = 112;    //공지사항
+    public static int CODE_USERUPDATE = 113; //다른 유저들 정보
 
 
     public RoomManager(){
@@ -41,22 +42,9 @@ public class RoomManager{
         GameUser newUser = new GameUser(userId, nickname, -1, "0");
         users.put(userId, newUser);
 
-
-
-
-
-
-
-
         for(Map.Entry<String, GameUser> entry: users.entrySet()) {
             System.out.println("현재 로비에 있는 유저: " + entry.getKey());
         }
-
-
-
-
-
-
 
         //클라이언트로 결과를 송신하는 작업은 RoomManagementServer에서 한다.
         return "0";
@@ -92,12 +80,12 @@ public class RoomManager{
         String roomId = UUID.randomUUID().toString();
         System.out.println("roomId: " + roomId);
 
-        GameRoom newGameRoom = new GameRoom(roomOwner, roomId, 1, title, password);
+        GameRoom newGameRoom = new GameRoom(roomOwner, roomId, 0, title, password);
         rooms.put(roomId, newGameRoom);
 
         //클라이언트로 결과를 송신하는 작업은 RoomManagementServer에서 한다.
 
-        return "0";
+        return roomId;
         
     }
     
@@ -180,11 +168,14 @@ public class RoomManager{
     }
     
     
-    public String EnterRoom(JSONObject jo){
+    public String EnterRoom(JSONObject jo, DataOutputStreamStorage dosStorage){
 
         System.out.println("EnterRoom Funciton has been called");
         String userId = (String)jo.get("_userId");
         String roomId = (String)jo.get("_roomId");
+        String nickname = (String)jo.get("_nickname");
+
+        DataOutputStream dos = dosStorage._dataOutputStreams.get(userId);
 
 
         //1. 해당 방이 존재하는지 확인한다.
@@ -193,7 +184,7 @@ public class RoomManager{
 
         //1-1. 방이 존재하지 않는다면 errorCode return
         if(room == null){
-            String msg = "요청한 방이 존재하지 않습니다";
+            String msg = "방이 존재하지 않습니다";
             System.out.println(msg);
             return msg;
         }
@@ -204,7 +195,7 @@ public class RoomManager{
         GameUser targetUser = users.get(userId);
 
         if(targetUser == null){
-            String msg = "유저가 로비에 입장처리 되지 않았습니다";
+            String msg = "입장처리 실패";
             System.out.println(msg);
             return msg;
         }
@@ -218,8 +209,50 @@ public class RoomManager{
         //(멤버가 targetUser 를 포함하여 3명일 경우 priority 2)
         targetUser._priority = room._memNum-1;
 
+        //3. 방에 있는 모든 멤버들에게 유저 입장을 알림.
+        String strNotice = "["+ nickname + "]" + "님이 입장하셨습니다";
+        BroadcastData enterNotice = new BroadcastData(CODE_NOTICE, userId, nickname, strNotice, "time");
+        Broadcast(room, enterNotice, dosStorage);
+
+        //4. 방에 멤버가 나 말고 또 있을경우 방안에 있는 유저들의 정보를 전달한다.
+        if(room._memNum > 1){
+            SendMembersInfo(room, targetUser, dos);
+        }
+
 
         return "0";
+    }
+
+    public void SendMembersInfo(GameRoom targetRoom, GameUser targetUser, DataOutputStream dos){
+        JSONArray memberJsonArray = new JSONArray();        
+
+        targetRoom._members.keySet().iterator();
+        //Hashmap _members object 에 대하여 jsonobject로 변환 -> jsonArray 에 넣기.
+        Iterator<String> keys = targetRoom._members.keySet().iterator();
+        while(keys.hasNext()) {
+            System.out.println("SendMemebersInfo; while문 도는중");
+            String key = keys.next();
+            GameUser user = targetRoom._members.get(key);
+
+
+            /** 여기서 object 를 곧바로 jsonString 으로 바꿔버리면
+             * JsonArray 에 string 형태로 추가되게 되므로 
+             * 따로 object 와 매치되는 json object 를 만들어 주어야 한다.
+             */
+            JSONObject jo = new JSONObject();
+
+            jo.put("_dataTypeCode", CODE_USERUPDATE);
+            jo.put("_userId", user._userId);
+            jo.put("_nickname", user._nickname);
+            jo.put("_priority", user._priority);
+            jo.put("_roomId",user._roomId);
+
+            //JsonArray에 추가
+            memberJsonArray.add(jo);
+
+        }
+
+        SendJsonArrayWithBytes(memberJsonArray, dos);
     }
     
 
@@ -265,8 +298,15 @@ public class RoomManager{
             //여기서 key 는 타겟룸에 속한 멤버들의 userId 이다
             String key = keys.next();
 
+            //만약에 key 가 이 메시지를 보낸 userId 라면 생략한다.
+            if(key.equals(broadcastData._sentUserId)){
+                System.out.println("이 메시지를 보낸 본인입니다: " + key);
+                continue;
+            }
+
             System.out.println("RoomManager; Broadcast(): targetRoom's UserId: " + key);
             
+            //dosStorage 로부터 userId를 통해 dos 를 찾는다.
             DataOutputStream dos = dosStorage._dataOutputStreams.get(key);
 
             JSONObject jo = new JSONObject();
@@ -280,6 +320,8 @@ public class RoomManager{
             ja.add(jo);
             
             System.out.println("RoomManager; Broadcast; jsonArray string: " + ja.toString());
+
+            //dos와 ja를 매개로 JsonArray를 Client 로 보낸다.
             SendJsonArrayWithBytes(ja, dos);
 
         }
@@ -287,12 +329,45 @@ public class RoomManager{
     }
 
 
-    public void QuitRoom(GameRoom room, GameUser user){
+    public void QuitRoom(JSONObject jo){
+        System.out.println("QuitRoom Funciton has been called");
+        String userId = (String)jo.get("_userId");
+
+        //1. 방에 퇴장처리한다.
+        //1-1. userId 에 해당하는 user 를 찾는다.
+        GameUser targetUser = users.get(userId);
+
+        //1-2. targetUser 의 GameRoom을 찾는다
+        String roomId = targetUser._roomId;
+        GameRoom targetRoom = rooms.get(roomId);
+
+        //targetRoom 의 memNum -1
+        targetRoom._memNum--;
+
+        //1-3. targetRoom 의 MemNum이 0이었을 경우에 DestroyRoom 호출
+        if(targetRoom._memNum == 0){
+            DestroyRoom(roomId);
+            return;
+        }
+
+        //targetRoom 내의 member에서 본인을 제거한다
+        targetRoom._members.remove(userId);
+
+        //GameRoom 내 모든 유저의 방장 priority는 감소한다
+        Iterator<String> keys = targetRoom._members.keySet().iterator();
+        while(keys.hasNext()) {
+            String key = keys.next();
+            GameUser u = targetRoom._members.get(key);
+
+            u._priority--;
+        }
+
+        targetUser._roomId = "0";
         
     }
     
-    public void DestroyRoom(GameRoom room, GameUser user){
-        
+    public void DestroyRoom(String roomId){
+        rooms.remove(roomId);
     }
     
 

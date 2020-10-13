@@ -28,6 +28,14 @@ import org.json.simple.parser.ParseException;
 
 public class RoomManagementServer {
 
+        //요청 코드
+    public static final int CODE_ENTERUSER = 11;
+    public static final int CODE_MAKEROOM = 21;
+    public static final int CODE_ENTERROOM = 22;
+    public static final int CODE_QUITROOM = 23;
+    public static final int CODE_REFRESHROOMLIST = 31;
+    public static final int CODE_REFRESHUSERLIST = 51;
+    public static final int CODE_SENDCHAT = 41;
 
     //Socket 으로부터 4byte 만큼의 데이터 사이즈 수신을 받으면 그 사이즈만큼 데이터를 받게 된다.
     private static byte[] getRecieve(DataInputStream dis) throws IOException{
@@ -109,7 +117,7 @@ public class RoomManagementServer {
 
                                 //request code 에 따라 방관리 기능이 달라진다.
                                 switch(_requestCode) {
-                                    case 11:
+                                    case CODE_ENTERUSER:
                                         //유저가 접속한 뒤 유저의 정보를 서버가 알기위함
                                         String enterUserResult = roomManager.EnterUser(jsonObj);
 
@@ -122,24 +130,34 @@ public class RoomManagementServer {
                                         sendBytes(dos, enterUserResult);
 
                                         break;
-                                    case 21:
-                                        String makeRoomResult = roomManager.MakeRoom(jsonObj);
-                                        //방만들기 작업 결과를 송신한다.
-                                        sendBytes(dos, makeRoomResult);
+                                    case CODE_MAKEROOM:
+                                        String roomId = roomManager.MakeRoom(jsonObj);
+                                        //할당한 방 Id 를 리턴한다.
+                                        sendBytes(dos, roomId);
                                         break;
 
-                                    case 22:
-                                        String enterRoomResult = roomManager.EnterRoom(jsonObj);
+                                    case CODE_ENTERROOM:
+                                        String enterRoomResult = roomManager.EnterRoom(jsonObj, dosStorage);
                                         sendBytes(dos, enterRoomResult);
                                         break;
-                                    case 31:
+                                    case CODE_REFRESHROOMLIST:
                                         //방 리스트 송신 함수
                                         String refreshRoomListResult = roomManager.SendRoomList(dos);
                                         break;
-                                    case 41:
-                                        roomManager.ReceiveChat(jsonObj, dosStorage);
-                                        System.out.println("RoomManagementServer; code 41: ReceiveChat");
+
+                                    case CODE_REFRESHUSERLIST:
                                         break;
+
+                                    
+                                    case CODE_SENDCHAT:
+                                        roomManager.ReceiveChat(jsonObj, dosStorage);
+                                        break;
+                                    
+                                    case CODE_QUITROOM:
+                                        roomManager.QuitRoom(jsonObj);
+                                        break;
+
+                                    
                                     
                                     
                                         
