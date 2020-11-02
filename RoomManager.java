@@ -301,7 +301,7 @@ public class RoomManager{
             //만약에 key 가 이 메시지를 보낸 userId 라면 생략한다.
             if(key.equals(broadcastData._sentUserId)){
                 System.out.println("이 메시지를 보낸 본인입니다: " + key);
-                continue;
+                // continue;
             }
 
             System.out.println("RoomManager; Broadcast(): targetRoom's UserId: " + key);
