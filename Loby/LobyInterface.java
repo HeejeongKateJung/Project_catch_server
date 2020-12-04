@@ -1,6 +1,3 @@
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -27,21 +24,48 @@ import org.json.simple.parser.ParseException;
 
 public class LobyInterface {
 
-    private int byteToint(byte[] arr) {
-        return (arr[0] & 0xff) << 24 | (arr[1] & 0xff) << 16 | (arr[2] & 0xff) << 8 | (arr[3] & 0xff);
+    // private int byteToint(byte[] arr) {
+    // return (arr[0] & 0xff) << 24 | (arr[1] & 0xff) << 16 | (arr[2] & 0xff) << 8 |
+    // (arr[3] & 0xff);
+    // }
+
+    // private static int byteToInt(byte[] bytes, ByteOrder order) {
+    // ByteBuffer buff = ByteBuffer.allocate(Integer.SIZE / 8);
+    // buff.order(order);
+
+    // // buff size = 4
+    // // bytes를 put 하면 position, limit 은 같은 위치가 된다.
+    // buff.put(bytes);
+    // // flip() : position 을 0에 위치시킨다.
+    // buff.flip();
+
+    // return buff.getInt();
+    // }
+
+    private static JSONObject string_2Json(String jsonString) {
+        // JSONString -> Json object
+        JSONParser parser = new JSONParser();
+        try {
+            Object obj = parser.parse(jsonString);
+            JSONObject jsonObj = (JSONObject) obj;
+            return jsonObj;
+        } catch (Exception e) {
+            return new JSONObject();
+        }
     }
 
-    private static int byteToInt(byte[] bytes, ByteOrder order) {
-        ByteBuffer buff = ByteBuffer.allocate(Integer.SIZE / 8);
-        buff.order(order);
+    private static String get_requestCode(String jsonString) {
+        try {
+            JSONObject jsonObj = string_2Json(jsonString);
+            // JSON 데이터의 코드를 확인한다.
+            String requestCode = (String) jsonObj.get("_requestCode");
+            return requestCode;
+        } catch (Exception e) {
+            // TODO: handle exception
+            System.out.println(e);
+            return "ERROR";
+        }
 
-        // buff size = 4
-        // bytes를 put 하면 position, limit 은 같은 위치가 된다.
-        buff.put(bytes);
-        // flip() : position 을 0에 위치시킨다.
-        buff.flip();
-
-        return buff.getInt();
     }
 
     private static void read_client(SocketChannel client) {
@@ -69,7 +93,15 @@ public class LobyInterface {
                 bytesRead = client.read(buf);
             }
 
-            System.out.println("Message: " + result);
+            // request code 확인
+            String _requestCode = get_requestCode(result);
+            if (_requestCode == "ERROR")
+                return;
+
+            // LobyFunction 객체는 requestCode 에 따라 다른 동작을 하게 된다.
+            System.out.println("request code: " + _requestCode);
+            LobyFunctions lf = new LobyFunctions(_requestCode, string_2Json(result));
+            lf.doSomething();
 
         } catch (Exception e) {
             System.out.println("READ FAILED");
