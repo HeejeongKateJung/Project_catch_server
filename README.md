@@ -4,15 +4,17 @@ Server codes of project_catch, unity2d casual game project.
 
 -----
 ## 서버 구조
-<img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/server_structure.PNG" width="400px">
+<center><img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/server_structure.PNG" width="600px"></center>
 
 -----
 ## 통신 프로세스
 
-<img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/game_process.PNG" width="400px">
+<center><img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/game_process.PNG" width="600px"></center>
 
 ### 1. 통신 구조
 ### 2. 패킷 종류
 
 -----
 ## 개발 프로세스 (진행중)
+
+
