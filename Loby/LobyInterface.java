@@ -94,6 +94,7 @@ public class LobyInterface {
             }
 
             // request code 확인
+            System.out.println(result);
             String _requestCode = get_requestCode(result);
             if (_requestCode == "ERROR")
                 return;

@@ -8,10 +8,10 @@ public class GameUser {
 
     }
 
-    public GameUser(String userId, String nickname, int priority, String roomId) {
+    public GameUser(String userId, String nickname, int score, String roomId) {
         _userId = userId;
         _nickname = nickname;
-        _priority = priority;
+        _score = score;
         _roomId = roomId;
     }
 
