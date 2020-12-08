@@ -61,7 +61,6 @@ public class LobyInterface {
             String requestCode = (String) jsonObj.get("_requestCode");
             return requestCode;
         } catch (Exception e) {
-            // TODO: handle exception
             System.out.println(e);
             return "ERROR";
         }
@@ -101,7 +100,7 @@ public class LobyInterface {
 
             // LobyFunction 객체는 requestCode 에 따라 다른 동작을 하게 된다.
             System.out.println("request code: " + _requestCode);
-            LobyFunctions lf = new LobyFunctions(_requestCode, string_2Json(result));
+            LobyFunctions lf = new LobyFunctions(_requestCode, string_2Json(result), client);
             lf.doSomething();
 
         } catch (Exception e) {
