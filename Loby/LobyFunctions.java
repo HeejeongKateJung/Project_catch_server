@@ -56,27 +56,29 @@ public class LobyFunctions {
 
         JSONArray ja = _dc.getUserList();
 
-        // System.out.println(ja.toString());
-
         String data = ja.toString();
-
-        // datasize->bytebuffer 변환
-        final ByteBuffer datasize = ByteBuffer.allocate(Integer.BYTES);
-        datasize.putInt(data.length());
-        datasize.flip();
+        Integer datasize = data.length();
+        data = datasize.toString() + data + "\r\n";
 
         // data->bytebuffer 변환
+        System.out.println(data);
         Charset charset = Charset.forName("UTF-8");
         ByteBuffer bb = ByteBuffer.allocateDirect(data.length());
         bb = charset.encode(data);
-
-        // System.out.println(data.length());
-        // System.out.println(datasize.getInt());
+        // bb.flip();
 
         try {
-            System.out.println(datasize.getInt());
-            _client.write(datasize);
-            // _client.write(bb);
+            /**
+             * 대용량 패킷은 끊어지는 경우가 많기 때문에 아직 쓸 버퍼가 남지 않을때까지 지속적으로 패킷을 보낸다.
+             */
+            for (int n = 0; n < 20; n++) {
+                if (_client.write(bb) > 0 && bb.hasRemaining() == true) {
+                    System.out.println("all done");
+                    break;
+                }
+                bb.rewind();
+            }
+            bb.clear();
         } catch (Exception e) {
             System.out.println("보내기 실패: ");
             System.out.println(e);

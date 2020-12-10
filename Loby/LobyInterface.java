@@ -93,9 +93,13 @@ public class LobyInterface {
             }
 
             // request code 확인
+            if (result == "") {
+                return;
+            }
+
             System.out.println(result);
             String _requestCode = get_requestCode(result);
-            if (_requestCode == "ERROR")
+            if (_requestCode == "ERROR" || _requestCode == null)
                 return;
 
             // LobyFunction 객체는 requestCode 에 따라 다른 동작을 하게 된다.
