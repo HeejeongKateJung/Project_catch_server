@@ -12,7 +12,7 @@ Server codes of project_catch.
 <center><img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/game_process.PNG" width="600px"></center>
 
 -----
-## :clipboard:Flow Chart (진행중)
+## :clipboard:기능 구현 순서 (진행중)
 #### 1. 구글 로그인 / 회원가입 기능 구현
 - 구글 로그인 API 
 - 인증서버에 사용자 정보 전송, 인증
