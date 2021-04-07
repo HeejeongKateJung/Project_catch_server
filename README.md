@@ -5,7 +5,7 @@ Server codes of project_catch.
 -----
 ## :wrench:서버 구조
 <center><img src="https://github.com/HeejeongKateJung/Project_catch_server/blob/master/image_readme/server_structure.PNG" width="600px"></center>
-<center> 로비 서버, 게임 서버, 인증 서버가 분리되어 있음 </center>
+<center> 로비, 게임 로직, 인증, 핑체크 로직이 분리되어 있음 </center>
 
 -----
 ## :loudspeaker:통신 프로세스
